@@ -1,0 +1,7 @@
+import { Icon } from '../../components/admin/AdminLayout'
+import { StatusBadge } from '../../components/admin/StatusBadge'
+import { payments } from '../../data/adminData'
+
+export function PaymentsPage() {
+  return <div className="page-stack"><div className="page-toolbar"><div className="filter-search"><Icon name="search" /><input placeholder="Search by reference or customer..." /></div><select defaultValue="All statuses"><option>All statuses</option><option>Successful</option><option>Pending</option><option>Failed</option></select><button className="button button-secondary"><Icon name="download" size={16} /> Export</button></div><section className="card table-card"><div className="table-meta"><span><strong>₦8,426,500</strong> collected this month</span><span className="muted">1,184 successful transactions</span></div><div className="table-wrap"><table><thead><tr><th>Reference</th><th>Customer</th><th>Amount</th><th>Date</th><th>Status</th><th /></tr></thead><tbody>{payments.map((payment) => <tr key={payment.reference}><td><strong className="reference">{payment.reference}</strong></td><td>{payment.customer}</td><td><strong>{payment.amount}</strong></td><td className="muted">{payment.date}</td><td><StatusBadge tone={payment.status.toLowerCase()}>{payment.status}</StatusBadge></td><td><button className="table-action"><Icon name="external" size={16} /></button></td></tr>)}</tbody></table></div></section></div>
+}
