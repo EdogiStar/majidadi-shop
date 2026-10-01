@@ -8,6 +8,10 @@ import { PaymentsPage } from './pages/admin/PaymentsPage'
 import { SettingsPage } from './pages/admin/SettingsPage'
 import { StoreLayout } from './components/store/StoreLayout'
 import { HomePage } from './pages/store/HomePage'
+import { ShopPage } from './pages/store/ShopPage'
+import { ProductDetailsPage } from './pages/store/ProductDetailsPage'
+import { CartPage } from './pages/store/CartPage'
+import { CheckoutPage } from './pages/store/CheckoutPage'
 import './App.css'
 
 function App() {
@@ -32,7 +36,17 @@ function App() {
   if (path.startsWith('/admin')) {
     return <AdminLayout path={path} onNavigate={navigate}>{page}</AdminLayout>
   }
-  return <StoreLayout><HomePage /></StoreLayout>
+  const productMatch = path.match(/^\/products\/([^/]+)$/)
+  const storePage = path === '/shop'
+    ? <ShopPage />
+    : path === '/cart'
+      ? <CartPage />
+      : path === '/checkout'
+        ? <CheckoutPage />
+    : productMatch
+      ? <ProductDetailsPage productId={productMatch[1]} />
+      : <HomePage />
+  return <StoreLayout>{storePage}</StoreLayout>
 }
 
 export default App
