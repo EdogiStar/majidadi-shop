@@ -6,10 +6,12 @@ import { OrdersPage } from './pages/admin/OrdersPage'
 import { CustomersPage } from './pages/admin/CustomersPage'
 import { PaymentsPage } from './pages/admin/PaymentsPage'
 import { SettingsPage } from './pages/admin/SettingsPage'
+import { StoreLayout } from './components/store/StoreLayout'
+import { HomePage } from './pages/store/HomePage'
 import './App.css'
 
 function App() {
-  const [path, setPath] = useState(() => window.location.pathname.startsWith('/admin') ? window.location.pathname : '/admin')
+  const [path, setPath] = useState(() => window.location.pathname)
   const navigate = (nextPath: string) => {
     window.history.pushState({}, '', nextPath)
     setPath(nextPath)
@@ -27,7 +29,10 @@ function App() {
     if (path === '/admin/settings') return <SettingsPage />
     return <DashboardPage />
   }, [path])
-  return <AdminLayout path={path} onNavigate={navigate}>{page}</AdminLayout>
+  if (path.startsWith('/admin')) {
+    return <AdminLayout path={path} onNavigate={navigate}>{page}</AdminLayout>
+  }
+  return <StoreLayout><HomePage /></StoreLayout>
 }
 
 export default App
