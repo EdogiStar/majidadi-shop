@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ProductFilters } from '../../components/store/ProductFilters'
 import { ProductGrid } from '../../components/store/ProductGrid'
-import { featuredProducts } from '../../data/storeData'
+import { useProducts } from '../../hooks/useProducts'
 
 function parsePrice(price: string) {
   return Number(price.replace(/[₦,]/g, ''))
@@ -12,6 +12,10 @@ export function ShopPage() {
   const [category, setCategory] = useState(params.get('category')?.toLowerCase() || 'all')
   const [search, setSearch] = useState(params.get('search') || '')
   const [sort, setSort] = useState(params.get('sort') || 'featured')
+  const { products, loading, error, retry } = useProducts({
+    category: category === 'all' ? undefined : category,
+    search,
+  })
 
   const updateUrl = (next: { category?: string; search?: string; sort?: string }) => {
     const nextCategory = next.category ?? category
@@ -28,20 +32,13 @@ export function ShopPage() {
     setSort(nextSort)
   }
 
-  const filteredProducts = useMemo(() => {
-    const result = featuredProducts.filter((product) => {
-      const matchesCategory = category === 'all' || (category === 'other' ? !['phones', 'laptops', 'stationery', 'books', 'accessories'].includes(product.category.toLowerCase()) : product.category.toLowerCase() === category)
-      const term = search.toLowerCase()
-      return matchesCategory && (!term || `${product.name} ${product.category}`.toLowerCase().includes(term))
-    })
-    return [...result].sort((a, b) => {
+  const sortedProducts = useMemo(() => [...products].sort((a, b) => {
       if (sort === 'price-asc') return parsePrice(a.price) - parsePrice(b.price)
       if (sort === 'price-desc') return parsePrice(b.price) - parsePrice(a.price)
       if (sort === 'name') return a.name.localeCompare(b.name)
       return 0
-    })
-  }, [category, search, sort])
+    }), [products, sort])
 
   const clearFilters = () => updateUrl({ category: 'all', search: '', sort: 'featured' })
-  return <main className="store-catalog"><div className="store-container"><div className="catalog-heading"><div><span className="section-kicker">THE MAJIDADI CATALOG</span><h1>Shop</h1><p>Find useful, quality products for every part of your day.</p></div><span className="catalog-count">{filteredProducts.length} products</span></div><ProductFilters category={category} search={search} sort={sort} onCategoryChange={(value) => updateUrl({ category: value })} onSearchChange={(value) => updateUrl({ search: value })} onSortChange={(value) => updateUrl({ sort: value })} /><ProductGrid products={filteredProducts} onClear={clearFilters} /></div></main>
+  return <main className="store-catalog"><div className="store-container"><div className="catalog-heading"><div><span className="section-kicker">THE MAJIDADI CATALOG</span><h1>Shop</h1><p>Find useful, quality products for every part of your day.</p></div><span className="catalog-count">{loading ? 'Loading products…' : `${sortedProducts.length} products`}</span></div><ProductFilters category={category} search={search} sort={sort} onCategoryChange={(value) => updateUrl({ category: value })} onSearchChange={(value) => updateUrl({ search: value })} onSortChange={(value) => updateUrl({ sort: value })} />{loading ? <div className="store-api-state" role="status">Loading products…</div> : error ? <div className="store-api-state store-api-error" role="alert"><p>{error}</p><button className="store-button store-button-dark" onClick={retry}>Try again</button></div> : <ProductGrid products={sortedProducts} onClear={clearFilters} />}</div></main>
 }
