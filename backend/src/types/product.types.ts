@@ -23,3 +23,16 @@ export type ProductListFilters = {
   category?: string | undefined
   search?: string | undefined
 }
+
+export type ProductInput = {
+  name: string
+  slug: string
+  description?: string | null
+  price: number
+  stock_quantity?: number
+  category_id?: string | null
+  image_url?: string | null
+  is_active?: boolean
+}
+
+export type ProductUpdate = Partial<ProductInput>

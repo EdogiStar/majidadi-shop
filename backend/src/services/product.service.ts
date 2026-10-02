@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseServer } from '../config/supabase.js'
-import type { Product, ProductListFilters } from '../types/product.types.js'
+import type { Product, ProductInput, ProductListFilters, ProductUpdate } from '../types/product.types.js'
 
 export class ProductServiceError extends Error {
-  constructor(message: string) {
+  constructor(message: string, readonly code?: string) {
     super(message)
     this.name = 'ProductServiceError'
   }
@@ -18,9 +18,26 @@ type ProductQuery = {
   then: Promise<{ data: Product[] | null; error: { message: string } | null }>['then']
 }
 
+type ProductWriteQuery = {
+  insert: (values: ProductInput) => ProductWriteQuery
+  update: (values: ProductUpdate) => ProductWriteQuery
+  select: (columns: string) => ProductWriteQuery
+  eq: (column: string, value: string) => ProductWriteQuery
+  maybeSingle: () => Promise<{ data: Product | null; error: { message: string; code?: string } | null }>
+  single: () => Promise<{ data: Product | null; error: { message: string; code?: string } | null }>
+}
+
+type AdminProfileQuery = {
+  select: (columns: string) => AdminProfileQuery
+  eq: (column: string, value: string) => AdminProfileQuery
+  maybeSingle: () => Promise<{ data: { role: string } | null; error: { message: string } | null }>
+}
+
 type ProductDatabaseClient = Pick<SupabaseClient, 'from'>
 
 export type ProductService = ReturnType<typeof createProductService>
+
+const PRODUCT_COLUMNS = 'id, category_id, name, slug, description, price, stock_quantity, image_url, is_active, created_at, updated_at, category:categories(id, name, slug)'
 
 function escapeSearchTerm(term: string) {
   return term.replace(/[%_]/g, '\\$&')
@@ -31,7 +48,7 @@ export function createProductService(client: ProductDatabaseClient = supabaseSer
     async list(filters: ProductListFilters): Promise<Product[]> {
       let query = client
         .from('products')
-        .select('id, category_id, name, slug, description, price, stock_quantity, image_url, is_active, created_at, updated_at, category:categories(id, name, slug)')
+        .select(PRODUCT_COLUMNS)
         .eq('is_active', true)
         .order('created_at', { ascending: false }) as unknown as ProductQuery
 
@@ -46,11 +63,54 @@ export function createProductService(client: ProductDatabaseClient = supabaseSer
     async getById(id: string): Promise<Product | null> {
       const result = await (client
         .from('products')
-        .select('id, category_id, name, slug, description, price, stock_quantity, image_url, is_active, created_at, updated_at, category:categories(id, name, slug)')
+        .select(PRODUCT_COLUMNS)
         .eq('id', id)
         .eq('is_active', true)
         .maybeSingle() as unknown as Promise<{ data: Product | null; error: { message: string } | null }>)
       if (result.error) throw new ProductServiceError(result.error.message)
+      return result.data
+    },
+
+    async isAdmin(userId: string): Promise<boolean> {
+      const result = await (client
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle() as unknown as Promise<{ data: { role: string } | null; error: { message: string } | null }>)
+      if (result.error) throw new ProductServiceError(result.error.message)
+      return result.data?.role === 'admin'
+    },
+
+    async create(input: ProductInput): Promise<Product> {
+      const result = await (client
+        .from('products')
+        .insert(input)
+        .select(PRODUCT_COLUMNS)
+        .single() as unknown as Promise<{ data: Product | null; error: { message: string; code?: string } | null }>)
+      if (result.error) throw new ProductServiceError(result.error.message, result.error.code)
+      if (!result.data) throw new ProductServiceError('Product creation returned no product')
+      return result.data
+    },
+
+    async update(id: string, input: ProductUpdate): Promise<Product | null> {
+      const result = await (client
+        .from('products')
+        .update(input)
+        .eq('id', id)
+        .select(PRODUCT_COLUMNS)
+        .maybeSingle() as unknown as Promise<{ data: Product | null; error: { message: string; code?: string } | null }>)
+      if (result.error) throw new ProductServiceError(result.error.message, result.error.code)
+      return result.data
+    },
+
+    async deactivate(id: string): Promise<Product | null> {
+      const result = await (client
+        .from('products')
+        .update({ is_active: false })
+        .eq('id', id)
+        .select(PRODUCT_COLUMNS)
+        .maybeSingle() as unknown as Promise<{ data: Product | null; error: { message: string; code?: string } | null }>)
+      if (result.error) throw new ProductServiceError(result.error.message, result.error.code)
       return result.data
     },
   }
