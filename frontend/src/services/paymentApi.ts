@@ -34,12 +34,15 @@ function getApiBaseUrl() {
   return baseUrl.replace(/\/+$/, '')
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+async function post<T>(path: string, body: unknown, accessToken?: string): Promise<T> {
   let response: Response
   try {
     response = await fetch(`${getApiBaseUrl()}${path}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
+      },
       body: JSON.stringify(body),
     })
   } catch {
@@ -56,8 +59,8 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return payload as T
 }
 
-export function initializePayment(checkout: CheckoutRequest) {
-  return post<PaymentInitialization>('/payments/initialize', checkout)
+export function initializePayment(checkout: CheckoutRequest, accessToken?: string) {
+  return post<PaymentInitialization>('/payments/initialize', checkout, accessToken)
 }
 
 export function verifyPayment(reference: string) {

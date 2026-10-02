@@ -3,6 +3,7 @@ import { StoreIcon } from '../../components/store/StoreHeader'
 import { useCart } from '../../context/cartHooks'
 import { formatNaira } from '../../context/cartUtils'
 import { initializePayment } from '../../services/paymentApi'
+import { useAuth } from '../../context/useAuth'
 
 type DeliveryMethod = 'delivery' | 'pickup'
 type FormValues = {
@@ -44,11 +45,17 @@ function validate(values: FormValues, deliveryMethod: DeliveryMethod) {
 
 export function CheckoutPage() {
   const { items, subtotal } = useCart()
+  const { user, session } = useAuth()
   const [values, setValues] = useState(initialValues)
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('delivery')
   const [errors, setErrors] = useState<FormErrors>({})
   const [message, setMessage] = useState('')
   const [isInitializing, setIsInitializing] = useState(false)
+  const customerValues = {
+    ...values,
+    fullName: values.fullName || user?.user_metadata.full_name || user?.user_metadata.name || '',
+    email: values.email || user?.email || '',
+  }
 
   if (items.length === 0) return <main className="checkout-page"><div className="store-container checkout-empty"><div className="cart-empty-icon"><StoreIcon name="cart" size={28} /></div><span className="section-kicker">NOTHING TO CHECK OUT YET</span><h1>Your cart is empty</h1><p>Add products to your cart before continuing to checkout.</p><a href="/shop" className="store-button store-button-dark">Continue Shopping <StoreIcon name="arrow" size={16} /></a></div></main>
 
@@ -61,7 +68,7 @@ export function CheckoutPage() {
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (isInitializing) return
-    const nextErrors = validate(values, deliveryMethod)
+    const nextErrors = validate(customerValues, deliveryMethod)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) {
       setMessage('')
@@ -71,8 +78,8 @@ export function CheckoutPage() {
     setMessage('')
     try {
       const payment = await initializePayment({
-        customer_name: values.fullName.trim(),
-        customer_email: values.email.trim(),
+        customer_name: customerValues.fullName.trim(),
+        customer_email: customerValues.email.trim(),
         customer_phone: values.phone.trim(),
         delivery_method: deliveryMethod,
         ...(deliveryMethod === 'delivery' ? {
@@ -81,7 +88,7 @@ export function CheckoutPage() {
           delivery_state: values.state.trim(),
         } : {}),
         items: items.map(({ product, quantity }) => ({ product_id: product.id, quantity })),
-      })
+      }, session?.access_token)
       window.location.assign(payment.authorizationUrl)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to start payment. Please try again.')
@@ -94,7 +101,7 @@ export function CheckoutPage() {
     <div className="checkout-heading"><span className="section-kicker">SECURE ORDER DETAILS</span><h1>Checkout</h1><p>Tell us how you would like to receive your order and how we can reach you.</p></div>
     <form className="checkout-layout" onSubmit={submit} noValidate>
       <div className="checkout-main">
-        <section className="checkout-section"><div className="checkout-section-heading"><span>1</span><div><h2>Customer information</h2><p>We will use these details to confirm your order.</p></div></div><div className="checkout-fields checkout-fields-three"><Field label="Full Name" name="fullName" value={values.fullName} error={errors.fullName} onChange={updateValue} autoComplete="name" /><Field label="Email Address" name="email" type="email" value={values.email} error={errors.email} onChange={updateValue} autoComplete="email" /><Field label="Phone Number" name="phone" value={values.phone} error={errors.phone} onChange={updateValue} autoComplete="tel" /></div></section>
+        <section className="checkout-section"><div className="checkout-section-heading"><span>1</span><div><h2>Customer information</h2><p>We will use these details to confirm your order.</p></div></div><div className="checkout-fields checkout-fields-three"><Field label="Full Name" name="fullName" value={customerValues.fullName} error={errors.fullName} onChange={updateValue} autoComplete="name" /><Field label="Email Address" name="email" type="email" value={customerValues.email} error={errors.email} onChange={updateValue} autoComplete="email" /><Field label="Phone Number" name="phone" value={values.phone} error={errors.phone} onChange={updateValue} autoComplete="tel" /></div></section>
         <section className="checkout-section"><div className="checkout-section-heading"><span>2</span><div><h2>Delivery method</h2><p>Choose how you would like to receive your order.</p></div></div><div className="delivery-methods"><DeliveryOption value="delivery" selected={deliveryMethod} onSelect={(value) => { setDeliveryMethod(value); setErrors({}); setMessage('') }} title="Home Delivery" description="Have your order delivered to your address." /><DeliveryOption value="pickup" selected={deliveryMethod} onSelect={(value) => { setDeliveryMethod(value); setErrors({}); setMessage('') }} title="Pickup from Shop" description="Pay online and collect your order from the shop." /></div>{deliveryMethod === 'delivery' && <div className="checkout-fields checkout-fields-address"><Field label="Delivery Address" name="address" value={values.address} error={errors.address} onChange={updateValue} autoComplete="street-address" /><Field label="City" name="city" value={values.city} error={errors.city} onChange={updateValue} autoComplete="address-level2" /><Field label="State" name="state" value={values.state} error={errors.state} onChange={updateValue} autoComplete="address-level1" /></div>}{deliveryMethod === 'pickup' && <p className="pickup-note"><StoreIcon name="cart" size={16} /> Collect your order from Shop No. 2, Opposite Sunset, Along Abaji Area Council, FCT Abuja.</p>}</section>
         <section className="checkout-section checkout-payment-section"><div className="checkout-section-heading"><span>3</span><div><h2>Payment</h2><p>Payment will be handled securely through Paystack.</p></div></div><button className="store-button store-button-dark checkout-pay-button" type="submit" disabled={isInitializing}>{isInitializing ? 'Connecting to Paystack…' : 'Pay with Paystack'} {!isInitializing && <StoreIcon name="arrow" size={17} />}</button>{message && <p className="checkout-message" role="alert">{message}</p>}</section>
       </div>

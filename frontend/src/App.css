@@ -320,6 +320,45 @@ tbody tr:hover { background: #fcfdff; }
 .tracking-items strong, .tracking-items b { color: #294238; font-size: 12px; }
 .tracking-items span { color: #859188; font-size: 10px; }
 .tracking-items b { white-space: nowrap; }
+
+.customer-page { min-height: 60vh; display: grid; align-content: start; justify-items: center; padding: 56px 18px 80px; background: #fbfaf7; }
+.customer-card { width: min(100%, 520px); padding: 30px; border: 1px solid #e5e9e3; border-radius: 7px; background: #fff; }
+.customer-card h1 { margin: 10px 0 8px; color: #213a34; font: 800 32px/1.15 Manrope, sans-serif; letter-spacing: -1px; }
+.customer-description { margin-bottom: 22px; color: #7d8c83; font-size: 13px; line-height: 1.6; }
+.customer-form { display: grid; gap: 15px; }
+.customer-form label { display: grid; gap: 7px; color: #4e6258; font-size: 11px; font-weight: 700; }
+.customer-form input { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid #dfe5df; border-radius: 4px; outline: 0; color: #294238; background: #fff; font: inherit; font-weight: 400; }
+.customer-form input:focus { border-color: #1f7a68; box-shadow: 0 0 0 3px rgba(31, 122, 104, .12); }
+.customer-form .store-button, .customer-card > .store-button { justify-content: center; border: 0; cursor: pointer; }
+.customer-form .store-button:disabled { cursor: wait; opacity: .7; }
+.customer-error { margin: 0; padding: 11px 13px; color: #a33d37; background: #fff0ee; font-size: 12px; line-height: 1.5; }
+.customer-switch { margin-top: 20px; color: #7d8c83; font-size: 12px; }
+.customer-switch a, .customer-state a, .customer-order-row a { color: #1f7a68; font-weight: 700; text-decoration: none; }
+.customer-secondary-link { display: block; margin-top: 17px; color: #1f7a68; font-size: 12px; font-weight: 700; text-decoration: none; }
+.customer-state { margin-top: 20px; color: #718279; font-size: 13px; line-height: 1.6; }
+.account-details { display: grid; gap: 16px; margin: 24px 0; }
+.account-details div { display: grid; gap: 5px; }
+.account-details dt { color: #859188; font-size: 10px; }
+.account-details dd { margin: 0; color: #294238; font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+.customer-orders-page { justify-items: stretch; }
+.customer-orders-card { width: min(100%, 900px); justify-self: center; }
+.customer-order-list { display: grid; margin-top: 25px; border-top: 1px solid #edf0eb; }
+.customer-order-row { display: grid; grid-template-columns: 1.1fr 1fr auto; align-items: center; gap: 20px; padding: 17px 0; border-bottom: 1px solid #edf0eb; }
+.customer-order-row > div { display: grid; gap: 6px; }
+.customer-order-row strong { color: #294238; font-size: 12px; }
+.customer-order-row span { color: #859188; font-size: 11px; }
+.customer-order-row > div:last-child { text-align: right; }
+.customer-order-detail { margin-top: 23px; }
+.customer-order-detail h2 { margin: 25px 0 10px; color: #294238; font: 700 15px Manrope, sans-serif; }
+.customer-address { padding: 12px; color: #557267; background: #eef6ef; font-size: 12px; line-height: 1.5; }
+.customer-order-items { border-top: 1px solid #edf0eb; }
+.customer-order-items > div { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; padding: 14px 0; border-bottom: 1px solid #edf0eb; }
+.customer-order-items strong, .customer-order-items b { color: #294238; font-size: 12px; }
+.customer-order-items span { color: #859188; font-size: 11px; }
+.customer-order-items b { grid-column: 2; grid-row: 1 / span 2; align-self: center; white-space: nowrap; }
+.store-nav-action { height: 40px; padding: 0; border: 0; border-bottom: 1px solid #edf0eb; color: #52675d; background: transparent; font: inherit; font-size: 11px; text-align: left; cursor: pointer; }
+.store-nav-error { color: #a33d37; font-size: 11px; }
+
 @media (max-width: 900px) {
   .checkout-layout { grid-template-columns: 1fr; }
   .checkout-summary { max-width: 520px; }
@@ -340,6 +379,10 @@ tbody tr:hover { background: #fcfdff; }
   .tracking-heading h1 { font-size: 31px; }
   .tracking-form, .tracking-result { padding: 18px; }
   .tracking-facts { gap: 14px; }
+  .customer-page { padding: 38px 16px 60px; }
+  .customer-card { padding: 21px; }
+  .customer-order-row { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .customer-order-row > div:last-child { text-align: left; }
 }
 
 @media (max-width: 900px) {

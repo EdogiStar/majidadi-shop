@@ -6,10 +6,12 @@ import healthRouter from './routes/health.routes.js'
 import { createAdminProductRouter, createProductRouter } from './routes/product.routes.js'
 import { createPaymentRouter } from './routes/payment.routes.js'
 import { createOrderTrackingRouter } from './routes/orderTracking.routes.js'
+import { createCustomerOrdersRouter } from './routes/customerOrders.routes.js'
 import type { AccessTokenVerifier, AdminChecker } from './middleware/auth.middleware.js'
 import { paymentService, type PaymentService } from './services/payment.service.js'
 import { orderTrackingService, type OrderTrackingService } from './services/orderTracking.service.js'
 import { productService, type ProductService } from './services/product.service.js'
+import { customerOrdersService, type CustomerOrdersService } from './services/customerOrders.service.js'
 
 morgan.token('safe-url', (request) => {
   const originalUrl = (request as typeof request & { originalUrl?: string }).originalUrl
@@ -21,6 +23,7 @@ export function createApp(
   adminAuth: { verifyAccessToken?: AccessTokenVerifier; isAdmin?: AdminChecker } = {},
   payments: PaymentService = paymentService,
   orderTracking: OrderTrackingService = orderTrackingService,
+  customerOrders: CustomerOrdersService = customerOrdersService,
 ) {
   const app = express()
 
@@ -35,8 +38,9 @@ export function createApp(
 
   app.use('/api/health', healthRouter)
   app.use('/api/products', createProductRouter(products))
-  app.use('/api/payments', createPaymentRouter(payments))
+  app.use('/api/payments', createPaymentRouter(payments, adminAuth.verifyAccessToken))
   app.use('/api/orders', createOrderTrackingRouter(orderTracking))
+  app.use('/api/orders', createCustomerOrdersRouter(customerOrders, adminAuth.verifyAccessToken))
   app.use('/api/admin/products', createAdminProductRouter(
     products,
     adminAuth.verifyAccessToken,

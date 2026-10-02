@@ -113,6 +113,17 @@ test('payment initialization charges database product prices and stores order it
   assert.match(result.reference, /^majidadi-[0-9a-f-]{36}$/i)
 })
 
+test('authenticated payment initialization persists only the supplied verified user identity', async () => {
+  const { database, state } = createFakeDatabase()
+  const service = createPaymentService(database as unknown as Parameters<typeof createPaymentService>[0], {
+    initialize: async (input) => ({ authorization_url: 'https://checkout.paystack.com/access', reference: input.reference }),
+    verify: async () => ({ status: 'success', reference, amount: 24690, currency: 'NGN', id: 42 }),
+  })
+
+  await service.initialize(checkout, 'verified-customer-id')
+  assert.equal(state.order?.user_id, 'verified-customer-id')
+})
+
 test('verified payments update orders once and repeated verification is idempotent', async () => {
   const { database, state } = createFakeDatabase()
   state.order = {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { AddressInfo } from 'node:net'
 import type { PaymentService } from '../src/services/payment.service.js'
+import type { User } from '@supabase/supabase-js'
 
 process.env.SUPABASE_URL = process.env.SUPABASE_URL ?? 'https://example.supabase.co'
 process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'test-service-role-key'
@@ -17,10 +18,12 @@ const validCheckout = {
 }
 
 let initializationInput: unknown
+let initializedUserId: string | undefined
 let verificationReference = ''
 const fakePaymentService: PaymentService = {
-  initialize: async (input) => {
+  initialize: async (input, userId) => {
     initializationInput = input
+    initializedUserId = userId
     return { authorizationUrl: 'https://checkout.paystack.com/test', reference, orderNumber: 'MJD-TEST-00000000' }
   },
   verify: async (receivedReference) => {
@@ -33,7 +36,11 @@ let server: ReturnType<ReturnType<typeof createApp>['listen']>
 let baseUrl = ''
 
 before(async () => {
-  const app = createApp(undefined, {}, fakePaymentService)
+  const app = createApp(undefined, {
+    verifyAccessToken: async (token) => token === 'verified-customer-token'
+      ? { id: 'verified-customer-id' } as User
+      : null,
+  }, fakePaymentService)
   server = app.listen(0)
   await new Promise<void>((resolve) => server.once('listening', resolve))
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
@@ -67,6 +74,41 @@ test('payment initialization accepts cart and customer details without a client 
     orderNumber: 'MJD-TEST-00000000',
   })
   assert.deepEqual(initializationInput, validCheckout)
+  assert.equal(initializedUserId, undefined)
+})
+
+test('payment initialization associates an order only with the verified token identity', async () => {
+  const response = await fetch(`${baseUrl}/api/payments/initialize`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: 'Bearer verified-customer-token',
+    },
+    body: JSON.stringify({ ...validCheckout, user_id: 'attacker-selected-id' }),
+  })
+  assert.equal(response.status, 400)
+  assert.equal(initializedUserId, undefined)
+
+  const authenticatedResponse = await fetch(`${baseUrl}/api/payments/initialize`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: 'Bearer verified-customer-token',
+    },
+    body: JSON.stringify(validCheckout),
+  })
+  assert.equal(authenticatedResponse.status, 201)
+  assert.equal(initializedUserId, 'verified-customer-id')
+
+  const invalidTokenResponse = await fetch(`${baseUrl}/api/payments/initialize`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: 'Bearer invalid-token',
+    },
+    body: JSON.stringify(validCheckout),
+  })
+  assert.equal(invalidTokenResponse.status, 401)
 })
 
 test('payment verification requires a valid reference and returns backend verification', async () => {

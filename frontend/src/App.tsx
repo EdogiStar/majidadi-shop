@@ -14,6 +14,8 @@ import { CartPage } from './pages/store/CartPage'
 import { CheckoutPage } from './pages/store/CheckoutPage'
 import { PaymentCallbackPage } from './pages/store/PaymentCallbackPage'
 import { OrderTrackingPage } from './pages/store/OrderTrackingPage'
+import { AccountPage, LoginPage, RegisterPage } from './pages/store/CustomerPages'
+import { CustomerOrdersPage } from './pages/store/CustomerOrdersPage'
 import './App.css'
 
 function App() {
@@ -39,6 +41,7 @@ function App() {
     return <AdminLayout path={path} onNavigate={navigate}>{page}</AdminLayout>
   }
   const productMatch = path.match(/^\/products\/([^/]+)$/)
+  const customerOrderMatch = path.match(/^\/orders\/([^/]+)$/)
   const storePage = path === '/shop'
     ? <ShopPage />
     : path === '/cart'
@@ -49,6 +52,16 @@ function App() {
           ? <PaymentCallbackPage />
           : path === '/track-order'
             ? <OrderTrackingPage />
+            : path === '/login'
+              ? <LoginPage />
+              : path === '/register'
+                ? <RegisterPage />
+                : path === '/account'
+                  ? <AccountPage />
+                  : path === '/orders'
+                    ? <CustomerOrdersPage />
+                    : customerOrderMatch
+                      ? <CustomerOrdersPage orderNumber={decodeURIComponent(customerOrderMatch[1])} />
     : productMatch
       ? <ProductDetailsPage productId={productMatch[1]} />
       : <HomePage />

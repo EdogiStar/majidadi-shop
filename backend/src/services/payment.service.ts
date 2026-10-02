@@ -79,7 +79,7 @@ export function createPaymentService(
   gateway: PaystackGateway = paystackGateway,
 ) {
   return {
-    async initialize(input: CheckoutInput) {
+    async initialize(input: CheckoutInput, userId?: string) {
       validateCustomer(input)
       if (!Array.isArray(input.items) || input.items.length === 0 || input.items.length > 50) {
         throw new PaymentServiceError('The cart must contain between 1 and 50 products', 400)
@@ -136,7 +136,7 @@ export function createPaymentService(
       const orderResult = await (database
         .from('orders')
         .insert({
-          user_id: null,
+          user_id: userId ?? null,
           order_number: orderNumber,
           total_amount: totalKobo / 100,
           status: 'pending',

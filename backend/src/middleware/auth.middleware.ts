@@ -44,6 +44,37 @@ export function createRequireAuth(
   }
 }
 
+export function createOptionalAuth(
+  verifyAccessToken: AccessTokenVerifier = verifySupabaseAccessToken,
+): RequestHandler {
+  return async (request, response, next) => {
+    const authorization = request.get('authorization')
+    if (!authorization) {
+      next()
+      return
+    }
+
+    const match = authorization.match(/^Bearer\s+(\S+)$/i)
+    if (!match?.[1]) {
+      response.status(401).json({ error: 'Invalid authentication token' })
+      return
+    }
+
+    try {
+      const user = await verifyAccessToken(match[1])
+      if (!user) {
+        response.status(401).json({ error: 'Invalid authentication token' })
+        return
+      }
+      request.user = user
+      next()
+    } catch (error) {
+      console.error('Authentication lookup failed', error)
+      response.status(401).json({ error: 'Invalid authentication token' })
+    }
+  }
+}
+
 export function createRequireAdmin(isAdmin: AdminChecker): RequestHandler {
   return async (request, response, next) => {
     if (!request.user) {

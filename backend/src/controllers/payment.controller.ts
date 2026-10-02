@@ -59,7 +59,7 @@ export function createPaymentController(service: PaymentService = paymentService
         return
       }
       try {
-        const payment = await service.initialize(request.body as CheckoutInput)
+        const payment = await service.initialize(request.body as CheckoutInput, request.user?.id)
         response.status(201).json(payment)
       } catch (error) {
         handlePaymentError(error, response, 'Unable to initialize payment')

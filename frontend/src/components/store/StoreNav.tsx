@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { useAuth } from '../../context/useAuth'
+
 type StoreIconName = 'search' | 'cart' | 'user' | 'menu' | 'close' | 'arrow' | 'chevron'
 
 export function StoreIcon({ name, size = 20 }: { name: StoreIconName; size?: number }) {
@@ -14,5 +17,16 @@ export function StoreIcon({ name, size = 20 }: { name: StoreIconName; size?: num
 }
 
 export function StoreNav({ links, open, onClose }: { links: string[]; open: boolean; onClose: () => void }) {
-  return <nav className={`store-nav ${open ? 'store-nav-open' : ''}`}><div className="store-container store-nav-inner"><div className="store-mobile-nav-heading"><strong>Shop Majidadi</strong><button onClick={onClose} aria-label="Close store navigation"><StoreIcon name="close" /></button></div>{links.map((link, index) =>   <a key={link} href={index === 0 ? '/' : link === 'Shop' ? '/shop' : `/shop?category=${link === 'Other categories' ? 'other' : link.toLowerCase()}`} className={index === 0 ? 'active' : ''} onClick={onClose}>{link}{link === 'Other categories' && <StoreIcon name="chevron" size={14} />}</a>)}<a href="/track-order" onClick={onClose}>Track Order</a></div></nav>
+  const { user, loading, signOut } = useAuth()
+  const [logoutError, setLogoutError] = useState('')
+  const logout = async () => {
+    const result = await signOut()
+    if (result.error) {
+      setLogoutError(result.error)
+      return
+    }
+    window.location.assign('/')
+  }
+
+  return <nav className={`store-nav ${open ? 'store-nav-open' : ''}`}><div className="store-container store-nav-inner"><div className="store-mobile-nav-heading"><strong>Shop Majidadi</strong><button onClick={onClose} aria-label="Close store navigation"><StoreIcon name="close" /></button></div>{links.map((link, index) =>   <a key={link} href={index === 0 ? '/' : link === 'Shop' ? '/shop' : `/shop?category=${link === 'Other categories' ? 'other' : link.toLowerCase()}`} className={index === 0 ? 'active' : ''} onClick={onClose}>{link}{link === 'Other categories' && <StoreIcon name="chevron" size={14} />}</a>)}<a href="/track-order" onClick={onClose}>Track Order</a>{!loading && (user ? <><a href="/orders" onClick={onClose}>My Orders</a><a href="/account" onClick={onClose}>Account</a><button className="store-nav-action" onClick={() => void logout()}>Logout</button></> : <><a href="/login" onClick={onClose}>Login</a><a href="/register" onClick={onClose}>Register</a></>)}{logoutError && <p className="store-nav-error" role="alert">{logoutError}</p>}</div></nav>
 }
