@@ -56,6 +56,7 @@ let server: ReturnType<ReturnType<typeof createApp>['listen']>
 let baseUrl = ''
 
 before(async () => {
+  process.env.FRONTEND_URL = 'https://store.example/'
   const adminApp = createApp(fakeProductService, {
     verifyAccessToken: async (token) => token === 'admin-token'
       ? { id: 'admin-user', app_metadata: {}, user_metadata: {}, aud: 'authenticated', created_at: '' }
@@ -76,6 +77,13 @@ test('GET /api/products returns filtered products', async () => {
   const response = await fetch(`${baseUrl}/api/products?category=phones&search=phone`)
   assert.equal(response.status, 200)
   assert.deepEqual(await response.json(), { products: [product] })
+})
+
+test('CORS normalizes a trailing slash from the configured frontend origin', async () => {
+  const response = await fetch(`${baseUrl}/api/products`, {
+    headers: { Origin: 'https://store.example' },
+  })
+  assert.equal(response.headers.get('access-control-allow-origin'), 'https://store.example')
 })
 
 test('GET /api/products/:id returns an active product', async () => {
