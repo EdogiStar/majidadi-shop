@@ -13,6 +13,7 @@ import { ProductDetailsPage } from './pages/store/ProductDetailsPage'
 import { CartPage } from './pages/store/CartPage'
 import { CheckoutPage } from './pages/store/CheckoutPage'
 import { PaymentCallbackPage } from './pages/store/PaymentCallbackPage'
+import { OrderTrackingPage } from './pages/store/OrderTrackingPage'
 import './App.css'
 
 function App() {
@@ -46,6 +47,8 @@ function App() {
         ? <CheckoutPage />
         : path === '/payment/callback'
           ? <PaymentCallbackPage />
+          : path === '/track-order'
+            ? <OrderTrackingPage />
     : productMatch
       ? <ProductDetailsPage productId={productMatch[1]} />
       : <HomePage />
