@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { StoreIcon } from '../../components/store/StoreHeader'
 import { useCart } from '../../context/cartHooks'
 import { formatNaira } from '../../context/cartUtils'
+import { initializePayment } from '../../services/paymentApi'
 
 type DeliveryMethod = 'delivery' | 'pickup'
 type FormValues = {
@@ -47,6 +48,7 @@ export function CheckoutPage() {
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('delivery')
   const [errors, setErrors] = useState<FormErrors>({})
   const [message, setMessage] = useState('')
+  const [isInitializing, setIsInitializing] = useState(false)
 
   if (items.length === 0) return <main className="checkout-page"><div className="store-container checkout-empty"><div className="cart-empty-icon"><StoreIcon name="cart" size={28} /></div><span className="section-kicker">NOTHING TO CHECK OUT YET</span><h1>Your cart is empty</h1><p>Add products to your cart before continuing to checkout.</p><a href="/shop" className="store-button store-button-dark">Continue Shopping <StoreIcon name="arrow" size={16} /></a></div></main>
 
@@ -56,15 +58,35 @@ export function CheckoutPage() {
     setMessage('')
   }
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (isInitializing) return
     const nextErrors = validate(values, deliveryMethod)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) {
       setMessage('')
       return
     }
-    setMessage('Paystack payment integration will be available soon.')
+    setIsInitializing(true)
+    setMessage('')
+    try {
+      const payment = await initializePayment({
+        customer_name: values.fullName.trim(),
+        customer_email: values.email.trim(),
+        customer_phone: values.phone.trim(),
+        delivery_method: deliveryMethod,
+        ...(deliveryMethod === 'delivery' ? {
+          delivery_address: values.address.trim(),
+          delivery_city: values.city.trim(),
+          delivery_state: values.state.trim(),
+        } : {}),
+        items: items.map(({ product, quantity }) => ({ product_id: product.id, quantity })),
+      })
+      window.location.assign(payment.authorizationUrl)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to start payment. Please try again.')
+      setIsInitializing(false)
+    }
   }
 
   return <main className="checkout-page"><div className="store-container">
@@ -74,7 +96,7 @@ export function CheckoutPage() {
       <div className="checkout-main">
         <section className="checkout-section"><div className="checkout-section-heading"><span>1</span><div><h2>Customer information</h2><p>We will use these details to confirm your order.</p></div></div><div className="checkout-fields checkout-fields-three"><Field label="Full Name" name="fullName" value={values.fullName} error={errors.fullName} onChange={updateValue} autoComplete="name" /><Field label="Email Address" name="email" type="email" value={values.email} error={errors.email} onChange={updateValue} autoComplete="email" /><Field label="Phone Number" name="phone" value={values.phone} error={errors.phone} onChange={updateValue} autoComplete="tel" /></div></section>
         <section className="checkout-section"><div className="checkout-section-heading"><span>2</span><div><h2>Delivery method</h2><p>Choose how you would like to receive your order.</p></div></div><div className="delivery-methods"><DeliveryOption value="delivery" selected={deliveryMethod} onSelect={(value) => { setDeliveryMethod(value); setErrors({}); setMessage('') }} title="Home Delivery" description="Have your order delivered to your address." /><DeliveryOption value="pickup" selected={deliveryMethod} onSelect={(value) => { setDeliveryMethod(value); setErrors({}); setMessage('') }} title="Pickup from Shop" description="Pay online and collect your order from the shop." /></div>{deliveryMethod === 'delivery' && <div className="checkout-fields checkout-fields-address"><Field label="Delivery Address" name="address" value={values.address} error={errors.address} onChange={updateValue} autoComplete="street-address" /><Field label="City" name="city" value={values.city} error={errors.city} onChange={updateValue} autoComplete="address-level2" /><Field label="State" name="state" value={values.state} error={errors.state} onChange={updateValue} autoComplete="address-level1" /></div>}{deliveryMethod === 'pickup' && <p className="pickup-note"><StoreIcon name="cart" size={16} /> Collect your order from Shop No. 2, Opposite Sunset, Along Abaji Area Council, FCT Abuja.</p>}</section>
-        <section className="checkout-section checkout-payment-section"><div className="checkout-section-heading"><span>3</span><div><h2>Payment</h2><p>Payment will be handled securely through Paystack.</p></div></div><button className="store-button store-button-dark checkout-pay-button" type="submit">Pay with Paystack <StoreIcon name="arrow" size={17} /></button>{message && <p className="checkout-message" role="status">{message}</p>}</section>
+        <section className="checkout-section checkout-payment-section"><div className="checkout-section-heading"><span>3</span><div><h2>Payment</h2><p>Payment will be handled securely through Paystack.</p></div></div><button className="store-button store-button-dark checkout-pay-button" type="submit" disabled={isInitializing}>{isInitializing ? 'Connecting to Paystack…' : 'Pay with Paystack'} {!isInitializing && <StoreIcon name="arrow" size={17} />}</button>{message && <p className="checkout-message" role="alert">{message}</p>}</section>
       </div>
       <aside className="checkout-summary"><div className="checkout-summary-heading"><h2>Order summary</h2><span>{items.reduce((count, item) => count + item.quantity, 0)} items</span></div><div className="checkout-summary-items">{items.map((item) => <div className="checkout-summary-item" key={item.product.id}><ProductVisual visual={item.product.visual} tone={item.product.tone} /><div><strong>{item.product.name}</strong><span>{item.quantity} × {formatNaira(priceValue(item.product.price))}</span></div><b>{formatNaira(priceValue(item.product.price) * item.quantity)}</b></div>)}</div><div className="checkout-totals"><div><span>Subtotal</span><strong>{formatNaira(subtotal)}</strong></div><div className="checkout-grand-total"><span>Total</span><strong>{formatNaira(subtotal)}</strong></div></div></aside>
     </form>

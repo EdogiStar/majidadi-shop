@@ -4,12 +4,15 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import healthRouter from './routes/health.routes.js'
 import { createAdminProductRouter, createProductRouter } from './routes/product.routes.js'
+import { createPaymentRouter } from './routes/payment.routes.js'
 import type { AccessTokenVerifier, AdminChecker } from './middleware/auth.middleware.js'
+import { paymentService, type PaymentService } from './services/payment.service.js'
 import { productService, type ProductService } from './services/product.service.js'
 
 export function createApp(
   products: ProductService = productService,
   adminAuth: { verifyAccessToken?: AccessTokenVerifier; isAdmin?: AdminChecker } = {},
+  payments: PaymentService = paymentService,
 ) {
   const app = express()
 
@@ -24,6 +27,7 @@ export function createApp(
 
   app.use('/api/health', healthRouter)
   app.use('/api/products', createProductRouter(products))
+  app.use('/api/payments', createPaymentRouter(payments))
   app.use('/api/admin/products', createAdminProductRouter(
     products,
     adminAuth.verifyAccessToken,
