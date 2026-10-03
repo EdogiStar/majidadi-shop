@@ -37,7 +37,9 @@ type ProductDatabaseClient = Pick<SupabaseClient, 'from'>
 
 export type ProductService = ReturnType<typeof createProductService>
 
-const PRODUCT_COLUMNS = 'id, category_id, name, slug, description, price, stock_quantity, image_url, is_active, created_at, updated_at, category:categories(id, name, slug)'
+const PRODUCT_FIELDS = 'id, category_id, name, slug, description, price, stock_quantity, image_url, is_active, created_at, updated_at'
+const PRODUCT_COLUMNS = `${PRODUCT_FIELDS}, category:categories(id, name, slug)`
+const FILTERED_PRODUCT_COLUMNS = `${PRODUCT_FIELDS}, category:categories!inner(id, name, slug)`
 
 function escapeSearchTerm(term: string) {
   return term.replace(/[%_]/g, '\\$&')
@@ -48,7 +50,9 @@ export function createProductService(client: ProductDatabaseClient = supabaseSer
     async list(filters: ProductListFilters): Promise<Product[]> {
       let query = client
         .from('products')
-        .select(PRODUCT_COLUMNS)
+        .select(filters.category
+          ? FILTERED_PRODUCT_COLUMNS
+          : PRODUCT_COLUMNS)
         .eq('is_active', true)
         .order('created_at', { ascending: false }) as unknown as ProductQuery
 
