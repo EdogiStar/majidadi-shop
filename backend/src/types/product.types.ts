@@ -24,6 +24,14 @@ export type ProductListFilters = {
   search?: string | undefined
 }
 
+export type AdminProductListFilters = {
+  search?: string | undefined
+  categoryId?: string | undefined
+  status?: 'all' | 'active' | 'inactive' | undefined
+  sortBy?: 'created_at' | 'name' | 'price' | 'stock_quantity' | undefined
+  sortDirection?: 'asc' | 'desc' | undefined
+}
+
 export type ProductInput = {
   name: string
   slug: string

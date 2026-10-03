@@ -26,6 +26,9 @@ export function createAdminProductRouter(
   const authorizeAdmin = createRequireAdmin(isAdmin)
 
   router.use(authenticate, authorizeAdmin)
+  router.get('/categories', controller.listCategories)
+  router.get('/', controller.listAdmin)
+  router.get('/:id', controller.getAdmin)
   router.post('/', controller.create)
   router.patch('/:id', controller.update)
   router.delete('/:id', controller.delete)

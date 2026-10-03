@@ -1,24 +1,97 @@
-import { Avatar, Icon } from '../../components/admin/AdminLayout'
-import { StatCard } from '../../components/admin/StatCard'
+import { useEffect, useState } from 'react'
+import { Icon, type IconName } from '../../components/admin/AdminLayout'
+import { EmptyState } from '../../components/admin/EmptyState'
 import { StatusBadge } from '../../components/admin/StatusBadge'
-import { orders, products } from '../../data/adminData'
+import { useAuth } from '../../context/useAuth'
+import { AdminOverviewApiError, getAdminOverview, type AdminOverview } from '../../services/adminOverviewApi'
 
-function SalesChart() {
-  return <div className="chart-card card"><div className="card-heading"><div><h2>Sales overview</h2><p>Revenue performance over the last 7 months</p></div><select defaultValue="7 months" aria-label="Chart period"><option>7 months</option><option>30 days</option><option>12 months</option></select></div><div className="chart-summary"><strong>₦8,426,500</strong><span className="positive">+18.4%</span></div><div className="chart"><div className="chart-y"><span>₦2.0m</span><span>₦1.5m</span><span>₦1.0m</span><span>₦500k</span><span>₦0</span></div><div className="chart-area"><div className="chart-grid"><i /><i /><i /><i /><i /></div><svg viewBox="0 0 680 220" preserveAspectRatio="none" aria-label="Sales chart"><defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#2563eb" stopOpacity=".16" /><stop offset="100%" stopColor="#2563eb" stopOpacity="0" /></linearGradient></defs><path d="M0 181 C50 168 60 143 112 151 S170 130 224 143 S270 116 332 125 S390 94 446 110 S510 52 563 72 S630 50 680 25 V220 H0Z" fill="url(#fill)" /><path d="M0 181 C50 168 60 143 112 151 S170 130 224 143 S270 116 332 125 S390 94 446 110 S510 52 563 72 S630 50 680 25" fill="none" stroke="#2563eb" strokeWidth="3" /></svg><div className="chart-x"><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span></div></div></div></div>
+function formatPrice(amount: number) {
+  return `₦${amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-function RecentOrders() {
-  return <section className="card table-card recent-orders"><div className="card-heading"><div><h2>Recent orders</h2><p>The latest orders from your store</p></div><a className="text-link" href="/admin/orders">View all <Icon name="arrow" size={15} /></a></div><div className="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Total</th><th>Status</th></tr></thead><tbody>{orders.slice(0, 4).map((order) => <tr key={order.id}><td><strong className="order-number">{order.id}</strong></td><td><span className="customer-cell"><Avatar initials={order.initials} small />{order.customer}</span></td><td className="muted">{order.date}</td><td><strong>{order.total}</strong></td><td><StatusBadge>{order.status}</StatusBadge></td></tr>)}</tbody></table></div></section>
+function formatDate(value: string) {
+  return new Date(value).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-function LowStock() {
-  return <section className="card low-stock"><div className="card-heading"><div><h2>Low stock</h2><p>Products that need your attention</p></div><a className="text-link" href="/admin/products">View all <Icon name="arrow" size={15} /></a></div><div className="stock-list">{products.filter((product) => product.stock < 5).map((product) => <div className="stock-row" key={product.sku}><div className="product-thumb">{product.name.slice(0, 1)}</div><div className="stock-info"><strong>{product.name}</strong><span>{product.category}</span></div><div className={`stock-number ${product.stock === 0 ? 'stock-zero' : ''}`}>{product.stock}<small> left</small></div></div>)}</div></section>
-}
-
-function QuickActions() {
-  return <section className="card quick-actions"><div className="card-heading"><div><h2>Quick actions</h2><p>Common tasks for your store</p></div></div><div className="quick-grid"><button><span className="quick-icon quick-blue"><Icon name="plus" /></span><span><strong>Add a product</strong><small>Create a new catalog item</small></span><Icon name="arrow" size={16} /></button><button><span className="quick-icon quick-purple"><Icon name="orders" /></span><span><strong>View pending orders</strong><small>4 orders need attention</small></span><Icon name="arrow" size={16} /></button><button><span className="quick-icon quick-orange"><Icon name="download" /></span><span><strong>Export sales report</strong><small>Download a CSV report</small></span><Icon name="arrow" size={16} /></button></div></section>
+function MetricCard({ label, value, icon, tone, detail }: {
+  label: string
+  value: string
+  icon: IconName
+  tone: string
+  detail: string
+}) {
+  return <div className="stat-card overview-metric"><div className="stat-top"><span className={`stat-icon stat-${tone}`}><Icon name={icon} size={19} /></span></div><div className="stat-value">{value}</div><div className="stat-label">{label}</div><div className="overview-metric-detail">{detail}</div></div>
 }
 
 export function DashboardPage() {
-  return <div className="dashboard"><div className="stats-grid"><StatCard label="Total sales" value="₦8,426,500" change="+18.4%" icon="wallet" tone="blue" /><StatCard label="Total orders" value="1,248" change="+12.6%" icon="orders" tone="purple" /><StatCard label="Total products" value="386" change="+4.2%" icon="package" tone="orange" /><StatCard label="Total customers" value="2,840" change="+8.1%" icon="users" tone="green" /></div><div className="dashboard-grid"><SalesChart /><LowStock /></div><div className="dashboard-grid lower-grid"><RecentOrders /><QuickActions /></div></div>
+  const { session } = useAuth()
+  const [result, setResult] = useState<{ key: string; data?: AdminOverview; error?: string } | null>(null)
+  const [reload, setReload] = useState(0)
+  const requestKey = `${session?.access_token ?? 'no-session'}:${reload}`
+
+  useEffect(() => {
+    if (!session?.access_token) return
+    let active = true
+    void getAdminOverview(session.access_token).then((data) => {
+      if (active) setResult({ key: requestKey, data })
+    }).catch((error: unknown) => {
+      if (active) setResult({
+        key: requestKey,
+        error: error instanceof AdminOverviewApiError ? error.message : 'Unable to load the overview. Please try again.',
+      })
+    })
+    return () => { active = false }
+  }, [requestKey, session?.access_token])
+
+  const currentResult = result?.key === requestKey ? result : null
+  const data = currentResult?.data
+  const loading = Boolean(session?.access_token) && !currentResult
+
+  if (!session?.access_token) return <p className="admin-error" role="alert">Your administrator session is unavailable. Sign in again and retry.</p>
+  if (loading) return <div className="admin-loading" role="status">Loading store overview…</div>
+  if (currentResult?.error || !data) return <div className="page-stack"><p className="admin-error" role="alert">{currentResult?.error ?? 'Unable to load the overview.'}</p><button className="button button-secondary" onClick={() => setReload((value) => value + 1)}>Try again</button></div>
+
+  const orderStatuses = [
+    ['Pending', data.orders.pending],
+    ['Processing', data.orders.processing],
+    ['Shipped', data.orders.shipped],
+    ['Delivered', data.orders.delivered],
+    ['Cancelled', data.orders.cancelled],
+  ] as const
+
+  return <div className="dashboard">
+    <div className="stats-grid">
+      <MetricCard label="Paid revenue" value={formatPrice(data.totalRevenue)} icon="wallet" tone="blue" detail={`${data.paidOrderCount.toLocaleString()} paid orders · excludes cancelled orders`} />
+      <MetricCard label="Total orders" value={data.orders.total.toLocaleString()} icon="orders" tone="purple" detail={`${data.orders.pending.toLocaleString()} pending fulfillment`} />
+      <MetricCard label="Products" value={data.products.total.toLocaleString()} icon="package" tone="orange" detail={`${data.products.active} active · ${data.products.inactive} inactive`} />
+      <MetricCard label="Registered customers" value={data.registeredCustomers.toLocaleString()} icon="users" tone="green" detail="Guest orders are not counted as customers" />
+    </div>
+
+    <div className="dashboard-grid overview-lower-grid">
+      <section className="card overview-status-card">
+        <div className="card-heading"><div><h2>Order fulfillment</h2><p>Current order count by fulfillment status</p></div><a className="text-link" href="/admin/orders">View orders <Icon name="arrow" size={15} /></a></div>
+        <div className="overview-status-list">{orderStatuses.map(([status, count]) => <div className="overview-status-row" key={status}><StatusBadge>{status}</StatusBadge><strong>{count.toLocaleString()}</strong></div>)}</div>
+      </section>
+      <section className="card overview-inventory-card">
+        <div className="card-heading"><div><h2>Inventory snapshot</h2><p>Product availability at a glance</p></div><a className="text-link" href="/admin/products">Manage products <Icon name="arrow" size={15} /></a></div>
+        <div className="overview-inventory-total"><strong>{data.products.total.toLocaleString()}</strong><span>Total products</span></div>
+        <div className="overview-inventory-breakdown"><span><i className="overview-dot overview-dot-active" />{data.products.active.toLocaleString()} active</span><span><i className="overview-dot overview-dot-inactive" />{data.products.inactive.toLocaleString()} inactive</span></div>
+        <div className="overview-low-stock"><span><Icon name="alert" size={17} />Low-stock products (5 or fewer)</span><strong>{data.products.lowStock.toLocaleString()}</strong></div>
+      </section>
+    </div>
+
+    <section className="card table-card recent-orders overview-recent-orders">
+      <div className="card-heading"><div><h2>Recent orders</h2><p>The latest orders from your store</p></div><a className="text-link" href="/admin/orders">View all <Icon name="arrow" size={15} /></a></div>
+      {data.recentOrders.length === 0 ? <EmptyState title="No orders yet" text="Orders will appear here after checkout." /> : <div className="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Total</th><th>Payment</th><th>Fulfillment</th></tr></thead><tbody>
+        {data.recentOrders.map((order) => <tr key={order.id}>
+          <td><a className="order-number" href={`/admin/orders?orderId=${encodeURIComponent(order.id)}`}>{order.orderNumber}</a></td>
+          <td><span className="admin-order-customer"><strong>{order.customerName}</strong><StatusBadge tone={order.customerType}>{order.customerType === 'guest' ? 'Guest' : 'Registered'}</StatusBadge></span></td>
+          <td className="muted">{formatDate(order.createdAt)}</td>
+          <td><strong>{formatPrice(order.totalAmount)}</strong></td>
+          <td><StatusBadge tone={order.paymentStatus}>{order.paymentStatus}</StatusBadge></td>
+          <td><StatusBadge>{order.status}</StatusBadge></td>
+        </tr>)}
+      </tbody></table></div>}
+    </section>
+  </div>
 }

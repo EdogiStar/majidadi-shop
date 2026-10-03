@@ -16,10 +16,23 @@ import { PaymentCallbackPage } from './pages/store/PaymentCallbackPage'
 import { OrderTrackingPage } from './pages/store/OrderTrackingPage'
 import { AccountPage, LoginPage, RegisterPage } from './pages/store/CustomerPages'
 import { CustomerOrdersPage } from './pages/store/CustomerOrdersPage'
+import { useAuth } from './context/useAuth'
+import { getAdminRouteAccess } from './services/adminRouteAccess'
 import './App.css'
 
 function App() {
   const [path, setPath] = useState(() => window.location.pathname)
+  const { user, role, loading, profileError } = useAuth()
+  const adminAccess = getAdminRouteAccess({
+    loading,
+    authenticated: Boolean(user),
+    role,
+    profileError,
+  })
+  const adminRedirect = path.startsWith('/admin')
+    ? adminAccess === 'login' ? '/login' : adminAccess === 'shop' ? '/shop' : null
+    : null
+  const activePath = adminRedirect ?? path
   const navigate = (nextPath: string) => {
     window.history.pushState({}, '', nextPath)
     setPath(nextPath)
@@ -29,36 +42,42 @@ function App() {
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
+  useEffect(() => {
+    if (adminRedirect) window.history.replaceState({}, '', adminRedirect)
+  }, [adminRedirect])
   const page = useMemo(() => {
-    if (path === '/admin/products') return <ProductsPage />
-    if (path === '/admin/orders') return <OrdersPage />
-    if (path === '/admin/customers') return <CustomersPage />
-    if (path === '/admin/payments') return <PaymentsPage />
-    if (path === '/admin/settings') return <SettingsPage />
+    if (activePath === '/admin/products') return <ProductsPage />
+    if (activePath === '/admin/orders') return <OrdersPage />
+    if (activePath === '/admin/customers') return <CustomersPage />
+    if (activePath === '/admin/payments') return <PaymentsPage />
+    if (activePath === '/admin/settings') return <SettingsPage />
     return <DashboardPage />
-  }, [path])
-  if (path.startsWith('/admin')) {
-    return <AdminLayout path={path} onNavigate={navigate}>{page}</AdminLayout>
+  }, [activePath])
+  if (activePath.startsWith('/admin')) {
+    if (adminAccess === 'allow') {
+      return <AdminLayout path={activePath} onNavigate={navigate}>{page}</AdminLayout>
+    }
+    return <StoreLayout><main className="customer-page"><p className="customer-state" role={adminAccess === 'error' ? 'alert' : 'status'}>{adminAccess === 'error' ? profileError : 'Checking administrator access…'}</p></main></StoreLayout>
   }
-  const productMatch = path.match(/^\/products\/([^/]+)$/)
-  const customerOrderMatch = path.match(/^\/orders\/([^/]+)$/)
-  const storePage = path === '/shop'
+  const productMatch = activePath.match(/^\/products\/([^/]+)$/)
+  const customerOrderMatch = activePath.match(/^\/orders\/([^/]+)$/)
+  const storePage = activePath === '/shop'
     ? <ShopPage />
-    : path === '/cart'
+    : activePath === '/cart'
       ? <CartPage />
-      : path === '/checkout'
+      : activePath === '/checkout'
         ? <CheckoutPage />
-        : path === '/payment/callback'
+        : activePath === '/payment/callback'
           ? <PaymentCallbackPage />
-          : path === '/track-order'
+          : activePath === '/track-order'
             ? <OrderTrackingPage />
-            : path === '/login'
+            : activePath === '/login'
               ? <LoginPage />
-              : path === '/register'
+              : activePath === '/register'
                 ? <RegisterPage />
-                : path === '/account'
+                : activePath === '/account'
                   ? <AccountPage />
-                  : path === '/orders'
+                  : activePath === '/orders'
                     ? <CustomerOrdersPage />
                     : customerOrderMatch
                       ? <CustomerOrdersPage orderNumber={decodeURIComponent(customerOrderMatch[1])} />

@@ -39,8 +39,8 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
 
-export function Avatar({ initials, small = false }: { initials: string; small?: boolean }) {
-  return <span className={`avatar ${small ? 'avatar-small' : ''}`}>{initials}</span>
+export function Avatar({ initials, imageUrl, small = false }: { initials: string; imageUrl?: string | null; small?: boolean }) {
+  return <span className={`avatar ${small ? 'avatar-small' : ''}`}>{imageUrl ? <img src={imageUrl} alt="" /> : initials}</span>
 }
 
 export function AdminLayout({ children, path, onNavigate }: { children: ReactNode; path: string; onNavigate: (path: string) => void }) {
@@ -53,6 +53,6 @@ export function AdminLayout({ children, path, onNavigate }: { children: ReactNod
   return <div className="admin-shell">
     <AdminSidebar path={path} onNavigate={navigate} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     {sidebarOpen && <button className="sidebar-overlay" onClick={() => setSidebarOpen(false)} aria-label="Close navigation overlay" />}
-    <div className="admin-main"><AdminHeader onOpenSidebar={() => setSidebarOpen(true)} /><main className="content"><div className="page-heading"><div><div className="breadcrumb"><span>Admin</span><Icon name="chevron" size={13} /><strong>{meta.title}</strong></div><h1>{meta.title}</h1><p>{meta.description}</p></div>{path === '/admin' && <button className="button button-primary" onClick={() => navigate('/admin/products')}><Icon name="plus" size={17} /> Add product</button>}</div>{children}</main></div>
+    <div className="admin-main"><AdminHeader onOpenSidebar={() => setSidebarOpen(true)} onNavigate={navigate} /><main className="content"><div className="page-heading"><div><div className="breadcrumb"><span>Admin</span><Icon name="chevron" size={13} /><strong>{meta.title}</strong></div><h1>{meta.title}</h1><p>{meta.description}</p></div>{path === '/admin' && <button className="button button-primary" onClick={() => navigate('/admin/products')}><Icon name="plus" size={17} /> Add product</button>}</div>{children}</main></div>
   </div>
 }
