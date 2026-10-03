@@ -10,6 +10,7 @@ import { createCustomerOrdersRouter } from './routes/customerOrders.routes.js'
 import { createAdminOrdersRouter } from './routes/adminOrders.routes.js'
 import { createAdminCustomersRouter } from './routes/adminCustomers.routes.js'
 import { createAdminOverviewRouter } from './routes/adminOverview.routes.js'
+import { createCartRouter } from './routes/cart.routes.js'
 import type { AccessTokenVerifier, AdminChecker } from './middleware/auth.middleware.js'
 import { paymentService, type PaymentService } from './services/payment.service.js'
 import { orderTrackingService, type OrderTrackingService } from './services/orderTracking.service.js'
@@ -18,6 +19,7 @@ import { customerOrdersService, type CustomerOrdersService } from './services/cu
 import { adminOrdersService, type AdminOrdersService } from './services/adminOrders.service.js'
 import { adminCustomersService, type AdminCustomersService } from './services/adminCustomers.service.js'
 import { adminOverviewService, type AdminOverviewService } from './services/adminOverview.service.js'
+import { cartService, type CartService } from './services/cart.service.js'
 
 morgan.token('safe-url', (request) => {
   const originalUrl = (request as typeof request & { originalUrl?: string }).originalUrl
@@ -33,6 +35,7 @@ export function createApp(
   adminOrders: AdminOrdersService = adminOrdersService,
   adminCustomers: AdminCustomersService = adminCustomersService,
   adminOverview: AdminOverviewService = adminOverviewService,
+  cart: CartService = cartService,
 ) {
   const app = express()
 
@@ -50,6 +53,7 @@ export function createApp(
   app.use('/api/payments', createPaymentRouter(payments, adminAuth.verifyAccessToken))
   app.use('/api/orders', createOrderTrackingRouter(orderTracking))
   app.use('/api/orders', createCustomerOrdersRouter(customerOrders, adminAuth.verifyAccessToken))
+  app.use('/api/cart', createCartRouter(cart, adminAuth.verifyAccessToken))
   app.use('/api/admin/orders', createAdminOrdersRouter(
     adminOrders,
     adminAuth.verifyAccessToken,

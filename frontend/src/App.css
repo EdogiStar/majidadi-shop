@@ -198,6 +198,7 @@ tbody tr:hover { background: #fcfdff; }
 /* Shopping cart */
 .cart-action { color: inherit; text-decoration: none; }
 .cart-page { min-height: 560px; padding: 64px 0 90px; background: #fbfaf7; }
+.cart-api-notice { width: min(1180px, calc(100% - 64px)); margin: 12px auto; padding: 12px 15px; border: 1px solid #f3d4d0; border-radius: 6px; color: #9d3737; background: #fff0ef; font-size: 12px; }
 .cart-heading { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 30px; border-bottom: 1px solid #e9e7df; }
 .cart-heading h1, .cart-empty h1 { margin: 12px 0 7px; color: #213a34; font: 800 38px/1.1 Manrope, sans-serif; letter-spacing: -1.5px; }
 .cart-heading p, .cart-empty p { color: #7d8c83; font-size: 13px; }

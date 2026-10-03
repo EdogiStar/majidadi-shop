@@ -23,9 +23,9 @@ export function PaymentCallbackPage() {
     if (!reference) return
 
     verifyPayment(reference)
-      .then((result) => {
+      .then(async (result) => {
         if (result.verified && result.orderNumber) {
-          clearCart()
+          await clearCart()
           setState({ status: 'success', orderNumber: result.orderNumber })
         } else {
           setState({ status: 'failed', message: result.message })

@@ -44,7 +44,7 @@ function validate(values: FormValues, deliveryMethod: DeliveryMethod) {
 }
 
 export function CheckoutPage() {
-  const { items, subtotal } = useCart()
+  const { items, subtotal, loading, error: cartError } = useCart()
   const { user, session } = useAuth()
   const [values, setValues] = useState(initialValues)
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('delivery')
@@ -57,7 +57,8 @@ export function CheckoutPage() {
     email: values.email || user?.email || '',
   }
 
-  if (items.length === 0) return <main className="checkout-page"><div className="store-container checkout-empty"><div className="cart-empty-icon"><StoreIcon name="cart" size={28} /></div><span className="section-kicker">NOTHING TO CHECK OUT YET</span><h1>Your cart is empty</h1><p>Add products to your cart before continuing to checkout.</p><a href="/shop" className="store-button store-button-dark">Continue Shopping <StoreIcon name="arrow" size={16} /></a></div></main>
+  if (loading) return <main className="checkout-page"><div className="store-container"><p className="store-api-state" role="status">Loading your cart…</p></div></main>
+  if (items.length === 0) return <main className="checkout-page"><div className="store-container checkout-empty"><div className="cart-empty-icon"><StoreIcon name="cart" size={28} /></div><span className="section-kicker">NOTHING TO CHECK OUT YET</span><h1>Your cart is empty</h1><p>{cartError || 'Add products to your cart before continuing to checkout.'}</p><a href="/shop" className="store-button store-button-dark">Continue Shopping <StoreIcon name="arrow" size={16} /></a></div></main>
 
   const updateValue = (field: keyof FormValues, value: string) => {
     setValues((current) => ({ ...current, [field]: value }))

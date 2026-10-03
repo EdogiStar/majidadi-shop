@@ -56,7 +56,7 @@ async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
   }
 }
 
-function mapProduct(product: ApiProduct): Product {
+export function mapStoreProduct(product: ApiProduct): Product {
   const price = Number(product.price)
   if (!Number.isFinite(price)) throw new ProductApiError('The product service returned an invalid product price.')
 
@@ -97,11 +97,11 @@ export async function fetchProducts(filters: { category?: string; search?: strin
   const suffix = query.size ? `?${query}` : ''
   const response = await request<ProductListResponse>(`/products${suffix}`, signal)
   if (!Array.isArray(response.products)) throw new ProductApiError('The product service returned an invalid product list.')
-  return response.products.map(mapProduct)
+  return response.products.map(mapStoreProduct)
 }
 
 export async function fetchProduct(id: string, signal?: AbortSignal) {
   const response = await request<ProductResponse>(`/products/${encodeURIComponent(id)}`, signal)
   if (!response.product) throw new ProductApiError('The product service returned an invalid product.')
-  return mapProduct(response.product)
+  return mapStoreProduct(response.product)
 }
