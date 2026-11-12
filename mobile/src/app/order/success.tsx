@@ -1,0 +1,8 @@
+﻿import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Text, View } from 'react-native';
+import { Button, Message, Screen, Title, money, colors } from '../../components/ui';
+export default function Success() {
+  const { orderNumber, total } = useLocalSearchParams<{ orderNumber?: string; total?: string }>();
+  const router = useRouter();
+  return <Screen><View style={{ width: 43, height: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#d4e7da' }}><Text style={{ color: colors.green, fontSize: 21, fontWeight: '800' }}>✓</Text></View><Text style={{ marginTop: 16, color: colors.green, fontSize: 9, fontWeight: '800', letterSpacing: 1 }}>PAYMENT CONFIRMED</Text><Title>Thank you for your order</Title><Message>Your payment has been verified by Paystack.</Message><View style={{ marginTop: 8, padding: 14, borderWidth: 1, borderColor: colors.line, borderRadius: 5, backgroundColor: colors.white }}><Text style={{ color: colors.muted, fontSize: 10 }}>ORDER NUMBER</Text><Text style={{ marginTop: 4, color: colors.ink, fontSize: 13, fontWeight: '800' }}>{orderNumber || 'Details unavailable'}</Text>{total ? <Text style={{ marginTop: 9, color: colors.darkGreen, fontSize: 15, fontWeight: '800' }}>{money(Number(total))}</Text> : null}</View><Message>Keep your order number and checkout email to track your order.</Message><Button label="Track Order" onPress={() => router.push({ pathname: '/order-tracking', params: { orderNumber: orderNumber || '' } })} /><Button label="My Orders" secondary onPress={() => router.push('/orders')} /><Button label="Continue shopping" secondary onPress={() => router.replace('/shop')} /></Screen>;
+}

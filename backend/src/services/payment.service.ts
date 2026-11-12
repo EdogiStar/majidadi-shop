@@ -129,7 +129,8 @@ export function createPaymentService(
       if (!Number.isSafeInteger(totalKobo)) throw new PaymentServiceError('The order amount is too large', 400)
 
       const frontendUrl = process.env.FRONTEND_URL?.trim().replace(/\/+$/, '')
-      if (!frontendUrl) throw new PaymentServiceError('Payment callback URL is not configured')
+      const callbackUrl = input.mobile_app ? 'majidadi://payment/callback' : frontendUrl ? frontendUrl + '/payment/callback' : null
+      if (!callbackUrl) throw new PaymentServiceError('Payment callback URL is not configured')
 
       const reference = `majidadi-${randomUUID()}`
       const orderNumber = makeOrderNumber()
@@ -173,7 +174,7 @@ export function createPaymentService(
           email: input.customer_email.trim().toLowerCase(),
           amount: totalKobo,
           reference,
-          callback_url: `${frontendUrl}/payment/callback`,
+          callback_url: callbackUrl,
           metadata: { order_number: order.order_number },
         })
         if (payment.reference !== reference) throw new PaymentServiceError('Payment reference mismatch')

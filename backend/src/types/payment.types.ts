@@ -12,6 +12,7 @@ export type CheckoutInput = {
   delivery_city?: string
   delivery_state?: string
   items: CheckoutItemInput[]
+  mobile_app?: boolean
 }
 
 export type PaystackInitialization = {

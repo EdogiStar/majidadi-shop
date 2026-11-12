@@ -13,12 +13,14 @@ const CHECKOUT_FIELDS = new Set([
   'delivery_city',
   'delivery_state',
   'items',
+  'mobile_app',
 ])
 
 function validateCheckoutBody(body: unknown): string | null {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return 'Request body must be a JSON object'
   const values = body as Record<string, unknown>
   if (Object.keys(values).some((key) => !CHECKOUT_FIELDS.has(key))) return 'Request contains unsupported checkout fields'
+  if (values.mobile_app !== undefined && typeof values.mobile_app !== 'boolean') return 'mobile_app must be a boolean'
   if (typeof values.customer_name !== 'string' || !values.customer_name.trim()) return 'Full name is required'
   if (typeof values.customer_email !== 'string' || !values.customer_email.trim()) return 'Email address is required'
   if (typeof values.customer_phone !== 'string' || !values.customer_phone.trim()) return 'Phone number is required'
